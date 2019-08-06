@@ -21,6 +21,10 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.ml.vision.FirebaseVision;
+import com.google.firebase.ml.vision.common.FirebaseVisionImage;
+import com.google.firebase.ml.vision.text.FirebaseVisionText;
+import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 
 public class CreateMovieActivity extends AppCompatActivity {
 
@@ -155,6 +159,29 @@ public class CreateMovieActivity extends AppCompatActivity {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
+            FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(imageBitmap);
+            FirebaseVisionTextRecognizer detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
+            detector.processImage(image)
+                    .addOnSuccessListener(new OnSuccessListener<FirebaseVisionText>() {
+                        @Override
+                        public void onSuccess(FirebaseVisionText firebaseVisionText) {
+                            etTitle.setText("");
+                            if(firebaseVisionText.getTextBlocks().size() == 0) {
+                                etTitle.setText("");
+                                return;
+                            }
+
+                            for (FirebaseVisionText.TextBlock block : firebaseVisionText.getTextBlocks()) {
+                                etTitle.append(block.getText());
+                            }
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Toast.makeText(CreateMovieActivity.this, "Failed", Toast.LENGTH_LONG).show();
+                        }
+                    });
 			
 			//TODO: feed imageBitmap into FirebaseVisionImage for text recognizing
         }
